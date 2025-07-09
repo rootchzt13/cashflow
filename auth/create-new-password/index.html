@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Password - Account Manager</title>
+    <link rel="stylesheet" href="../auth.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>Create a New Password</h1>
+            <p>Your new password must be different from previous ones.</p>
+        </div>
+        <form id="resetPasswordForm">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="newPassword" placeholder="Enter your new password" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="confirmNewPassword" placeholder="Confirm your new password" required>
+                </div>
+            </div>
+            <button type="submit" class="submit-btn">Reset Password</button>
+        </form>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module" src="index.js"></script>
+    <script>
+        feather.replace()
+    </script>
+</body>
+</html>
