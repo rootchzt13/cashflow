@@ -722,10 +722,18 @@ header h1 {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-#calculatorModal .modal-body {
+#calculatorModal .modal-body,
+#settingsModal .modal-body {
     max-height: 60vh; /* Use viewport height for better responsiveness */
     overflow-y: auto;
     padding: 1.5rem;
+}
+
+.modal-description {
+    margin-bottom: 1.5rem;
+    color: var(--on-surface-variant-color);
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 #calcResults {
@@ -738,4 +746,66 @@ header h1 {
     color: var(--income-color);
     background-color: rgba(3, 218, 198, 0.1);
     margin-top: 1rem;
+}
+
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    header {
+        padding-bottom: 1rem;
+    }
+
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    .cards {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .add-data-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters-container {
+        flex-direction: column;
+    }
+
+    .data-card-header, .data-card-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .modal {
+        width: 90%;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sign-out-btn span {
+        display: none; /* On smaller screens, the icon is enough */
+    }
+
+    .sign-out-btn {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
 }

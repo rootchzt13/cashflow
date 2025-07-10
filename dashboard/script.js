@@ -35,8 +35,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const calcResultSection = document.getElementById('calcResultSection');
     const calcResultsContainer = document.getElementById('calcResults');
 
+    // Settings Modal Elements
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const settingsForm = document.getElementById('settingsForm');
+
     let transactions = [];
     let labels = [];
+    let operationalCosts = {
+        biaya_checkout: 1500,
+        biaya_buat_toko: 8000,
+        biaya_peking: 850,
+        biaya_username: 1000,
+        biaya_ongkir: 0,
+        id: null
+    };
     let page = 0;
     const itemsPerPage = 5;
     let isLoading = false;
@@ -426,15 +440,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialShipping = getNumericValue('calcInitialShipping');
         const shippingDiscount = getNumericValue('calcShippingDiscount');
 
-        // --- Perform calculations based on user's logic ---
-        // 1. Modal Awal
+        // --- Perform calculations based on user's custom costs ---
         const totalInitialCost = itemCost * itemsShipped;
 
-        // 2. Biaya Operasional
-        const coSalary = itemsDelivered * 1500;
-        const storeFee = (itemsShipped / 10) * 8000;
-        const packingFee = itemsShipped * 850;
-        const usernameFee = (itemsShipped / 2) * 1000;
+        const coSalary = itemsDelivered * operationalCosts.biaya_checkout;
+        const storeFee = (itemsShipped / 10) * operationalCosts.biaya_buat_toko;
+        const packingFee = itemsShipped * operationalCosts.biaya_peking;
+        const usernameFee = (itemsShipped / 2) * operationalCosts.biaya_username;
         const netShippingCost = initialShipping * (1 - (shippingDiscount / 100));
         
         const totalOperationalCost = coSalary + storeFee + packingFee + usernameFee + netShippingCost;
@@ -450,10 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>Total Modal ( ${formatRupiah(itemCost.toString())} x ${itemsShipped} pcs ): <strong>${formatRupiah(totalInitialCost.toString())}</strong></p>
             <hr>
             <h4>Biaya Operasional</h4>
-            <p>Gaji CO ( ${itemsDelivered} pcs x Rp 1.500 ): ${formatRupiah(coSalary.toString())}</p>
-            <p>Gaji Toko ( ${itemsShipped / 10} toko x Rp 8.000 ): ${formatRupiah(storeFee.toString())}</p>
-            <p>Gaji Packing ( ${itemsShipped} pcs x Rp 850 ): ${formatRupiah(packingFee.toString())}</p>
-            <p>Biaya Username ( ${itemsShipped / 2} x Rp 1.000 ): ${formatRupiah(usernameFee.toString())}</p>
+            <p>Gaji CO ( ${itemsDelivered} pcs x ${formatRupiah(operationalCosts.biaya_checkout.toString())} ): ${formatRupiah(coSalary.toString())}</p>
+            <p>Gaji Toko ( ${itemsShipped / 10} toko x ${formatRupiah(operationalCosts.biaya_buat_toko.toString())} ): ${formatRupiah(storeFee.toString())}</p>
+            <p>Biaya Packing ( ${itemsShipped} pcs x ${formatRupiah(operationalCosts.biaya_peking.toString())} ): ${formatRupiah(packingFee.toString())}</p>
+            <p>Biaya Username ( ${itemsShipped / 2} x ${formatRupiah(operationalCosts.biaya_username.toString())} ): ${formatRupiah(usernameFee.toString())}</p>
             <p>Biaya Ongkir ( ${formatRupiah(initialShipping.toString())} - ${shippingDiscount}% ): ${formatRupiah(netShippingCost.toString())}</p>
             <p><strong>Total Biaya Operasional:</strong> ${formatRupiah(totalOperationalCost.toString())}</p>
             <hr>
@@ -809,22 +821,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     async function fetchInitialData() {
-        // Fetch labels first, as they are independent
+        // Fetch labels and operational costs in parallel
         try {
-            const user = await supabase.auth.getUser();
-            if (!user.data.user) return; // Guard clause
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-            const { data: labelListData, error: labelListError } = await supabase
-                .from('LabelList')
-                .select('*')
-                .eq('user_id', user.data.user.id);
+            const [labelsResponse, costsResponse] = await Promise.all([
+                supabase.from('LabelList').select('*').eq('user_id', user.id),
+                supabase.from('Operasional').select('*').eq('user_id', user.id).maybeSingle()
+            ]);
 
-            if (labelListError) throw labelListError;
-            labels = labelListData;
-            renderLabelDropdown(); // Render dropdown after fetching labels
+            if (labelsResponse.error) throw labelsResponse.error;
+            labels = labelsResponse.data;
+            renderLabelDropdown();
+
+            if (costsResponse.error) throw costsResponse.error;
+            if (costsResponse.data) {
+                operationalCosts = costsResponse.data;
+            }
+            // If costsResponse.data is null, the defaults will be used.
+
         } catch (error) {
-            console.error('Error fetching labels:', error);
-            showToast('Could not load labels.', 'error');
+            console.error('Error fetching initial data:', error);
+            showToast('Could not load initial data.', 'error');
         }
 
         // Fetch totals and first page of transactions
@@ -899,9 +918,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Calculator Event Listeners
-    openCalculatorBtn.addEventListener('click', () => calculatorModal.classList.add('active'));
+    openCalculatorBtn.addEventListener('click', () => {
+        // Pre-fill default shipping cost from settings, ensuring it's not null
+        const defaultShipping = operationalCosts.biaya_ongkir || 0;
+        document.getElementById('calcInitialShipping').value = formatRupiah(defaultShipping.toString());
+        calculatorModal.classList.add('active');
+    });
     closeCalculatorBtn.addEventListener('click', () => calculatorModal.classList.remove('active'));
     calculateBtn.addEventListener('click', handleCalculator);
+
+    // Settings Modal Listeners
+    openSettingsBtn.addEventListener('click', () => {
+        // Populate the form with current costs before showing, ensuring values are not null
+        document.getElementById('settingGajiCo').value = formatRupiah((operationalCosts.biaya_checkout || 0).toString());
+        document.getElementById('settingGajiToko').value = formatRupiah((operationalCosts.biaya_buat_toko || 0).toString());
+        document.getElementById('settingBiayaPacking').value = formatRupiah((operationalCosts.biaya_peking || 0).toString());
+        document.getElementById('settingBiayaUsername').value = formatRupiah((operationalCosts.biaya_username || 0).toString());
+        document.getElementById('settingBiayaOngkir').value = formatRupiah((operationalCosts.biaya_ongkir || 0).toString());
+        settingsModal.classList.add('active');
+    });
+    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
+
+    settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('saveSettingsBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Menyimpan...';
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const getNumericValue = (id) => unformatRupiah(document.getElementById(id).value) || 0;
+
+            const newCosts = {
+                user_id: user.id,
+                biaya_checkout: getNumericValue('settingGajiCo'),
+                biaya_buat_toko: getNumericValue('settingGajiToko'),
+                biaya_peking: getNumericValue('settingBiayaPacking'),
+                biaya_username: getNumericValue('settingBiayaUsername'),
+                biaya_ongkir: getNumericValue('settingBiayaOngkir'),
+            };
+
+            // If there's an existing ID, include it for the upsert to work as an update.
+            if (operationalCosts.id) {
+                newCosts.id = operationalCosts.id;
+            }
+
+            const { data, error } = await supabase
+                .from('Operasional')
+                .upsert(newCosts)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            
+            // Update the global costs object with the newly saved data
+            operationalCosts = data;
+            
+            showToast('Pengaturan biaya berhasil disimpan!', 'success');
+            settingsModal.classList.remove('active');
+
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Simpan Pengaturan';
+        }
+    });
 
     addProfitToAppBtn.addEventListener('click', () => {
         const profit = addProfitToAppBtn.dataset.profit;
@@ -927,6 +1010,13 @@ Total Pengiriman: ${document.getElementById('calcItemsShipped').value} pcs`;
 
     // Add formatting to calculator currency inputs
     ['calcTotalPayment', 'calcItemCost', 'calcInitialShipping'].forEach(id => {
+        document.getElementById(id).addEventListener('keyup', (e) => {
+            e.target.value = formatRupiah(e.target.value);
+        });
+    });
+    
+    // Add formatting to settings currency inputs
+    ['settingGajiCo', 'settingGajiToko', 'settingBiayaPacking', 'settingBiayaUsername', 'settingBiayaOngkir'].forEach(id => {
         document.getElementById(id).addEventListener('keyup', (e) => {
             e.target.value = formatRupiah(e.target.value);
         });

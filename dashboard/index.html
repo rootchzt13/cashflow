@@ -65,6 +65,7 @@
         <div class="add-data-container">
             <button class="add-data-btn" id="addDataBtn"><i data-feather="plus"></i> Tambah Data</button>
             <button class="add-data-btn secondary-btn" id="openCalculatorBtn"><i data-feather="cpu"></i> Kalkulator</button>
+            <button class="add-data-btn secondary-btn" id="openSettingsBtn"><i data-feather="settings"></i> Pengaturan Biaya</button>
         </div>
 
         <div class="filters-container">
@@ -182,6 +183,43 @@
                 <button type="button" class="secondary-btn" id="calculateBtn">Hitung</button>
                 <button type="submit" class="submit-btn" id="addProfitToAppBtn" style="display:none;">Masukan ke Aplikasi</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h2>Pengaturan Biaya Operasional</h2>
+            <form id="settingsForm">
+                <div class="modal-body">
+                    <p class="modal-description">Atur biaya default yang akan digunakan oleh kalkulator. Biaya ini akan disimpan untuk penggunaan di masa mendatang.</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="settingGajiCo">Gaji CO (per pesanan sampai)</label>
+                            <input type="text" id="settingGajiCo" class="setting-input" placeholder="Rp 0">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingGajiToko">Gaji Toko (per 10 pesanan)</label>
+                            <input type="text" id="settingGajiToko" class="setting-input" placeholder="Rp 0">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingBiayaPacking">Biaya Packing (per pcs)</label>
+                            <input type="text" id="settingBiayaPacking" class="setting-input" placeholder="Rp 0">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingBiayaUsername">Biaya Username (per 2 pesanan)</label>
+                            <input type="text" id="settingBiayaUsername" class="setting-input" placeholder="Rp 0">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingBiayaOngkir">Biaya Ongkir Default</label>
+                            <input type="text" id="settingBiayaOngkir" class="setting-input" placeholder="Rp 0">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="closeSettingsBtn">Tutup</button>
+                    <button type="submit" class="submit-btn" id="saveSettingsBtn">Simpan Pengaturan</button>
+                </div>
+            </form>
         </div>
     </div>
 
