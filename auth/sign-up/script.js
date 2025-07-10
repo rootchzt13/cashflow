@@ -80,13 +80,11 @@ signUpForm.addEventListener('submit', async (e) => {
                 backdropFilter: "blur(10px)",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
                 borderRadius: "8px"
+            },
+            callback: function() {
+                window.location.href = '../sign-in/';
             }
         }).showToast();
-        
-        // Redirect to sign-in page after a short delay
-        setTimeout(() => {
-            window.location.href = '../sign-in/';
-        }, 2000);
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);
