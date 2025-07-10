@@ -410,15 +410,33 @@ header h1 {
     z-index: 10;
 }
 
+.suggestions-container.scrollable {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
 .suggestion-item {
-    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
     cursor: pointer;
-    color: var(--on-surface-color);
+    transition: background-color 0.2s ease;
 }
 
 .suggestion-item:hover {
-    background-color: var(--primary-color);
-    color: var(--on-primary-color);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-item .delete-icon {
+    color: #ff5f6d; /* A reddish color for delete */
+    visibility: visible;
+    opacity: 1;
+    transition: color 0.2s ease;
+}
+
+.delete-icon:hover {
+    color: #ff3c4e; /* Brighter red on hover */
 }
 
 .suggestion-item.create-new {

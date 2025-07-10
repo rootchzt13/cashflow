@@ -122,6 +122,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function renderLabelDropdown() {
+        labelSuggestionsContainer.innerHTML = '';
+        if (labels.length > 0) {
+            labelSuggestionsContainer.classList.add('scrollable');
+            labels.forEach(label => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.dataset.labelName = label.label_name;
+
+                const labelText = document.createElement('span');
+                labelText.textContent = label.label_name;
+                
+                const deleteIcon = document.createElement('i');
+                deleteIcon.dataset.feather = 'trash-2';
+                deleteIcon.className = 'delete-icon';
+                deleteIcon.dataset.labelId = label.id;
+                deleteIcon.dataset.labelName = label.label_name;
+
+                item.appendChild(labelText);
+                item.appendChild(deleteIcon);
+                labelSuggestionsContainer.appendChild(item);
+            });
+            feather.replace(); // To render the new trash icons
+        } else {
+            labelSuggestionsContainer.classList.remove('scrollable');
+            labelSuggestionsContainer.innerHTML = `<div class="suggestion-item"><span>No labels found. Type to create one.</span></div>`;
+        }
+        labelSuggestionsContainer.style.display = 'block';
+    }
+
+    async function deleteLabel(labelId, labelName) {
+        // First, check if the label is being used in any transaction
+        const { data: usageData, error: usageError } = await supabase
+            .from('Manager')
+            .select('id', { count: 'exact' })
+            .eq('label', labelName);
+
+        if (usageError) {
+            showToast(`Error checking label usage: ${usageError.message}`, 'error');
+            return;
+        }
+
+        if (usageData.length > 0) {
+            showToast(`Cannot delete label "${labelName}" as it is currently in use by ${usageData.length} transaction(s).`, 'error');
+            return;
+        }
+
+        // If not in use, proceed with deletion
+        showConfirmModal(`Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`, async () => {
+            const { error: deleteError } = await supabase
+                .from('LabelList')
+                .delete()
+                .eq('id', labelId);
+
+            if (deleteError) {
+                showToast(`Error deleting label: ${deleteError.message}`, 'error');
+            } else {
+                showToast(`Label "${labelName}" has been deleted successfully.`);
+                // Refresh labels from the database
+                await fetchLabels(); 
+                // Re-render the dropdown if it's open
+                if (labelSuggestionsContainer.style.display === 'block') {
+                    renderLabelDropdown();
+                }
+            }
+            closeConfirmModal();
+        });
+    }
+
     function resetModal() {
         addDataForm.reset();
         editIdInput.value = '';
@@ -242,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateLabels() {
         const labelFilterDropdown = document.getElementById('labelFilter');
+        if (!labelFilterDropdown) return; // Guard clause
         labelFilterDropdown.innerHTML = '<option value="all">Semua Label</option>'; // Clear for filter
 
         labels.forEach(label => {
@@ -387,17 +457,43 @@ document.addEventListener('DOMContentLoaded', () => {
     labelInput.addEventListener('focus', renderLabelSuggestions);
 
     typeInput.addEventListener('click', renderTypeSuggestions);
-
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!labelSuggestionsContainer.contains(e.target) && e.target !== labelInput) {
-            labelSuggestionsContainer.style.display = 'none';
-        }
-        if (!typeSuggestionsContainer.contains(e.target) && e.target !== typeInput) {
+    typeInput.addEventListener('focus', renderTypeSuggestions);
+    typeSuggestionsContainer.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'SPAN' || e.target.classList.contains('suggestion-item')) {
+            const item = e.target.closest('.suggestion-item');
+            typeInput.value = item.textContent.trim();
+            typeInput.dataset.value = item.dataset.value;
             typeSuggestionsContainer.style.display = 'none';
         }
-        if (!labelFilterSuggestions.contains(e.target) && e.target !== labelFilterInput) {
+    });
+
+    labelInput.addEventListener('focus', renderLabelDropdown);
+
+    document.addEventListener('click', (e) => {
+        if (!labelInput.contains(e.target) && !labelSuggestionsContainer.contains(e.target)) {
+            labelSuggestionsContainer.style.display = 'none';
+        }
+        if (!typeInput.contains(e.target) && !typeSuggestionsContainer.contains(e.target)) {
+            typeSuggestionsContainer.style.display = 'none';
+        }
+        if (!labelFilterInput.contains(e.target) && !labelFilterSuggestions.contains(e.target)) {
             labelFilterSuggestions.style.display = 'none';
+        }
+    });
+    
+    labelSuggestionsContainer.addEventListener('mousedown', (e) => {
+        const deleteIcon = e.target.closest('.delete-icon');
+        if (deleteIcon) {
+            const labelId = deleteIcon.dataset.labelId;
+            const labelName = deleteIcon.dataset.labelName;
+            deleteLabel(parseInt(labelId, 10), labelName);
+            return; // Stop further processing to prevent selecting the label
+        }
+        
+        const suggestionItem = e.target.closest('.suggestion-item');
+        if (suggestionItem && suggestionItem.dataset.labelName) {
+            labelInput.value = suggestionItem.dataset.labelName;
+            labelSuggestionsContainer.style.display = 'none';
         }
     });
 
@@ -701,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (labelListError) throw labelListError;
             labels = labelListData;
+            renderLabelDropdown(); // Render dropdown after fetching labels
         } catch (error) {
             console.error('Error fetching labels:', error);
             showToast('Could not load labels.', 'error');
