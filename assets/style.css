@@ -801,11 +801,50 @@ header h1 {
 }
 
 @media (max-width: 480px) {
+    header h1 {
+        font-size: 1.6rem;
+    }
+
+    .modal h2 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .card .amount {
+        font-size: 1.5rem;
+    }
+
+    .data-card {
+        padding: 1rem;
+    }
+    
     .form-actions {
         flex-direction: column;
+        gap: 0.5rem;
     }
 
     .form-actions button {
         width: 100%;
     }
+}
+
+.empty-state-container {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--on-surface-variant-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.empty-state-container svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
 }

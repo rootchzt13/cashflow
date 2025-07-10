@@ -640,7 +640,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!append && data.length === 0) {
-            cardsContainer.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">No transactions yet. Add one to get started!</p>';
+            const emptyStateHTML = `
+                <div class="empty-state-container">
+                    <i data-feather="folder"></i>
+                    <h3>Tidak Ada Transaksi</h3>
+                    <p>Mulai tambahkan data pemasukan atau pengeluaran Anda.</p>
+                </div>
+            `;
+            cardsContainer.innerHTML = emptyStateHTML;
+            feather.replace();
             return;
         }
 
