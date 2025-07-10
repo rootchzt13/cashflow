@@ -735,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showToast('You have been signed out.', 'info');
         setTimeout(() => {
-            window.location.href = '../auth/sign-in/index.html';
+            window.location.href = '../auth/sign-in/';
         }, 1500);
     });
     addDataBtn.addEventListener('click', toggleModal);

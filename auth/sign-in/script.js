@@ -56,8 +56,8 @@ signInForm.addEventListener('submit', async (e) => {
 
         // Redirect to the dashboard page upon successful sign-in
         setTimeout(() => {
-            window.location.href = '../../dashboard/index.html';
-        }, 2000);
+            window.location.href = '../../dashboard/';
+        }, 1500);
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);

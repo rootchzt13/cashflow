@@ -85,8 +85,8 @@ signUpForm.addEventListener('submit', async (e) => {
         
         // Redirect to sign-in page after a short delay
         setTimeout(() => {
-            window.location.href = '../sign-in/index.html';
-        }, 5000);
+            window.location.href = '../sign-in/';
+        }, 2000);
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);

@@ -14,7 +14,7 @@ forgotPasswordForm.addEventListener('submit', async (e) => {
 
     try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth/create-new-password/index.html`,
+            redirectTo: `${window.location.origin}/auth/create-new-password/`,
         });
 
         if (error) {
