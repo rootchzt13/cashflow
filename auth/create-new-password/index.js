@@ -72,7 +72,7 @@ resetPasswordForm.addEventListener('submit', async (e) => {
         }).showToast();
         
         setTimeout(() => {
-            window.location.href = '../sign-in/';
+            window.location.href = '/sign-in/';
         }, 3000);
 
     } catch (error) {
