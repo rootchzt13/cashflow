@@ -56,7 +56,7 @@ signInForm.addEventListener('submit', async (e) => {
 
         // Redirect to the dashboard page upon successful sign-in
         setTimeout(() => {
-            window.location.href = '/dashboard/';
+            window.location.href = '../../dashboard/';
         }, 2000);
 
     } catch (error) {
