@@ -13,12 +13,8 @@ forgotPasswordForm.addEventListener('submit', async (e) => {
     const email = document.getElementById('email').value;
 
     try {
-        // Construct a relative path for the redirect URL
-        const redirectPath = window.location.pathname.replace('forgot-password/', 'create-new-password/');
-        const redirectTo = new URL(redirectPath, window.location.origin).href;
-
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: redirectTo,
+            redirectTo: `${window.location.origin}/auth/create-new-password/index.html`,
         });
 
         if (error) {

@@ -462,6 +462,21 @@ header h1 {
     color: var(--on-primary-color);
 }
 
+.modal h2.modal-title-confirm {
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+#confirmModalBody p {
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    line-height: 1.6;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
 /* Responsive */
 @media (min-width: 768px) {
     .cards {
@@ -650,21 +665,4 @@ header h1 {
 .action-btn i {
     width: 18px;
     height: 18px;
-}
-
-.delete-confirm {
-    background-color: #e74c3c;
-    border: 1px solid #c0392b;
-}
-
-.delete-confirm:hover {
-    background-color: #c0392b;
-}
-
-#confirmDeleteModal {
-    display: none; /* Hidden by default */
-}
-
-#confirmDeleteModal.active {
-    display: flex; /* Show when active */
 }

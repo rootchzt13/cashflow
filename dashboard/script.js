@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingSpinner = document.getElementById('loading-spinner');
     const labelFilterInput = document.getElementById('labelFilterInput');
     const labelFilterSuggestions = document.getElementById('labelFilterSuggestions');
-    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalText = document.getElementById('confirmModalText');
     const confirmYesBtn = document.getElementById('confirmYesBtn');
     const confirmNoBtn = document.getElementById('confirmNoBtn');
 
@@ -33,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allDataLoaded = false;
     let isSearching = false;
     let isFiltering = false;
-    let transactionToDelete = null;
+    let confirmCallback = null;
 
     function showToast(message, type = 'info') {
         const backgroundColor = type === 'error' ? 'linear-gradient(to right, #ff5f6d, #ffc371)' : 'linear-gradient(to right, #00b09b, #96c93d)';
@@ -53,6 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 border: "1px solid rgba(255, 255, 255, 0.3)"
             },
         }).showToast();
+    }
+
+    function showConfirmModal(message, callback) {
+        confirmModalText.textContent = message;
+        confirmCallback = callback;
+        confirmModal.classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        confirmModal.classList.remove('active');
+        confirmCallback = null;
     }
 
     function updateSummary(data) {
@@ -417,8 +429,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deleteTransaction(id) {
-        transactionToDelete = id;
-        confirmDeleteModal.classList.add('active');
+        showConfirmModal('Apakah Anda yakin ingin menghapus transaksi ini?', async () => {
+            try {
+                const { error } = await supabase.from('Manager').delete().eq('id', id);
+                if (error) throw error;
+                showToast('Transaksi berhasil dihapus', 'success');
+                fetchInitialData();
+            } catch (error) {
+                console.error('Error deleting transaction:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
     }
 
     async function fetchAndSetTotals() {
@@ -539,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const user = await supabase.auth.getUser();
             if (!user.data.user) {
-                window.location.href = '../auth/sign-in/';
+                window.location.href = '../auth/sign-in/index.html';
                 return;
             }
 
@@ -714,14 +735,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showToast('You have been signed out.', 'info');
         setTimeout(() => {
-            window.location.href = '../auth/sign-in/';
+            window.location.href = '../auth/sign-in/index.html';
         }, 1500);
     });
     addDataBtn.addEventListener('click', toggleModal);
     cancelBtn.addEventListener('click', toggleModal);
+    confirmYesBtn.addEventListener('click', () => {
+        if (confirmCallback) {
+            confirmCallback();
+        }
+        closeConfirmModal();
+    });
+    confirmNoBtn.addEventListener('click', closeConfirmModal);
+
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
             toggleModal();
+        }
+        if (e.target === confirmModal) {
+            closeConfirmModal();
         }
     });
     jumlahInput.addEventListener('keyup', (e) => {
@@ -747,29 +779,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     labelFilterInput.addEventListener('input', renderLabelFilterSuggestions);
     labelFilterInput.addEventListener('click', renderLabelFilterSuggestions);
-
-    confirmNoBtn.addEventListener('click', () => {
-        confirmDeleteModal.classList.remove('active');
-        transactionToDelete = null;
-    });
-
-    confirmYesBtn.addEventListener('click', async () => {
-        if (transactionToDelete) {
-            try {
-                const { error } = await supabase.from('Manager').delete().eq('id', transactionToDelete);
-                if (error) throw error;
-                showToast('Transaction deleted successfully', 'success');
-                fetchInitialData();
-            } catch (error)
-            {
-                console.error('Error deleting transaction:', error);
-                showToast(`Error: ${error.message}`, 'error');
-            } finally {
-                confirmDeleteModal.classList.remove('active');
-                transactionToDelete = null;
-            }
-        }
-    });
 
     fetchInitialData(); 
 }); 

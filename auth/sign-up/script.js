@@ -85,7 +85,7 @@ signUpForm.addEventListener('submit', async (e) => {
         
         // Redirect to sign-in page after a short delay
         setTimeout(() => {
-            window.location.href = '../sign-in/';
+            window.location.href = '../sign-in/index.html';
         }, 5000);
 
     } catch (error) {
