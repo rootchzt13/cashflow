@@ -26,6 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmYesBtn = document.getElementById('confirmYesBtn');
     const confirmNoBtn = document.getElementById('confirmNoBtn');
 
+    // Calculator Elements
+    const openCalculatorBtn = document.getElementById('openCalculatorBtn');
+    const calculatorModal = document.getElementById('calculatorModal');
+    const closeCalculatorBtn = document.getElementById('closeCalculatorBtn');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const addProfitToAppBtn = document.getElementById('addProfitToAppBtn');
+    const calcResultSection = document.getElementById('calcResultSection');
+    const calcResultsContainer = document.getElementById('calcResults');
+
     let transactions = [];
     let labels = [];
     let page = 0;
@@ -67,32 +76,52 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmCallback = null;
     }
 
-    function updateSummary(data) {
-        const income = data.filter(t => t.type === 'income').reduce((sum, t) => sum + t.jumlah, 0);
-        const expense = data.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.jumlah, 0);
-        const balance = income - expense;
+    async function updateTotalSummary() {
+        try {
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError || !userData.user) throw userError || new Error("User not found.");
 
-        const pemasukanEl = document.getElementById('pemasukan');
-        const pengeluaranEl = document.getElementById('pengeluaran');
-        const penghasilanEl = document.getElementById('penghasilan');
+            const { data, error } = await supabase
+                .from('Manager')
+                .select('jumlah, type')
+                .eq('user_id', userData.user.id);
 
-        pemasukanEl.innerHTML = `+ ${formatRupiah(income.toString())}`;
-        pemasukanEl.classList.remove('expense');
-        pemasukanEl.classList.add('income');
+            if (error) throw error;
 
-        pengeluaranEl.innerHTML = `- ${formatRupiah(expense.toString())}`;
-        pengeluaranEl.classList.remove('income');
-        pengeluaranEl.classList.add('expense');
+            const income = data.filter(t => t.type === 'income').reduce((sum, t) => sum + t.jumlah, 0);
+            const expense = data.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.jumlah, 0);
+            const balance = income - expense;
 
-        if (balance >= 0) {
-            penghasilanEl.innerHTML = `+ ${formatRupiah(balance.toString())}`;
-            penghasilanEl.classList.remove('expense');
-            penghasilanEl.classList.add('income');
-        } else {
-            penghasilanEl.innerHTML = `- ${formatRupiah(Math.abs(balance).toString())}`;
-            penghasilanEl.classList.remove('income');
-            penghasilanEl.classList.add('expense');
+            const pemasukanEl = document.getElementById('pemasukan');
+            const pengeluaranEl = document.getElementById('pengeluaran');
+            const penghasilanEl = document.getElementById('penghasilan');
+
+            pemasukanEl.innerHTML = `+ ${formatRupiah(income.toString())}`;
+            pemasukanEl.classList.remove('expense');
+            pemasukanEl.classList.add('income');
+
+            pengeluaranEl.innerHTML = `- ${formatRupiah(expense.toString())}`;
+            pengeluaranEl.classList.remove('income');
+            pengeluaranEl.classList.add('expense');
+
+            if (balance >= 0) {
+                penghasilanEl.innerHTML = `+ ${formatRupiah(balance.toString())}`;
+                penghasilanEl.classList.remove('expense');
+                penghasilanEl.classList.add('income');
+            } else {
+                penghasilanEl.innerHTML = `- ${formatRupiah(Math.abs(balance).toString())}`;
+                penghasilanEl.classList.remove('income');
+                penghasilanEl.classList.add('expense');
+            }
+        } catch (error) {
+            console.error("Error updating summary:", error);
+            showToast("Could not update summary totals.", "error");
         }
+    }
+
+    function updateSummary(data) {
+        // This function is now deprecated and will not be used to prevent calculation errors.
+        // The new `updateTotalSummary` function should be used instead.
     }
 
     async function fetchData() {
@@ -378,15 +407,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.classList.add('suggestion-item');
             item.textContent = option.display;
-            item.addEventListener('click', () => {
-                typeInput.value = option.display;
-                typeInput.dataset.value = option.value; // Store the 'income'/'expense' value
-                typeSuggestionsContainer.style.display = 'none';
-            });
+            item.dataset.value = option.value;
             typeSuggestionsContainer.appendChild(item);
         });
 
         typeSuggestionsContainer.style.display = 'block';
+    }
+
+    function handleCalculator() {
+        // --- Helper function to parse inputs ---
+        const getNumericValue = (id) => unformatRupiah(document.getElementById(id).value) || 0;
+        
+        // --- Get all input values ---
+        const totalPayment = getNumericValue('calcTotalPayment');
+        const itemsShipped = getNumericValue('calcItemsShipped');
+        const itemCost = getNumericValue('calcItemCost');
+        const itemsDelivered = getNumericValue('calcItemsDelivered');
+        const initialShipping = getNumericValue('calcInitialShipping');
+        const shippingDiscount = getNumericValue('calcShippingDiscount');
+
+        // --- Perform calculations based on user's logic ---
+        // 1. Modal Awal
+        const totalInitialCost = itemCost * itemsShipped;
+
+        // 2. Biaya Operasional
+        const coSalary = itemsDelivered * 1500;
+        const storeFee = (itemsShipped / 10) * 8000;
+        const packingFee = itemsShipped * 850;
+        const usernameFee = (itemsShipped / 2) * 1000;
+        const netShippingCost = initialShipping * (1 - (shippingDiscount / 100));
+        
+        const totalOperationalCost = coSalary + storeFee + packingFee + usernameFee + netShippingCost;
+
+        // 3. Profit Bersih
+        const netProfit = totalPayment - totalInitialCost - totalOperationalCost;
+
+        // --- Display results ---
+        calcResultsContainer.innerHTML = `
+            <p><strong>Total Payment Shopee:</strong> ${formatRupiah(totalPayment.toString())}</p>
+            <hr>
+            <h4>Modal Awal</h4>
+            <p>Total Modal ( ${formatRupiah(itemCost.toString())} x ${itemsShipped} pcs ): <strong>${formatRupiah(totalInitialCost.toString())}</strong></p>
+            <hr>
+            <h4>Biaya Operasional</h4>
+            <p>Gaji CO ( ${itemsDelivered} pcs x Rp 1.500 ): ${formatRupiah(coSalary.toString())}</p>
+            <p>Gaji Toko ( ${itemsShipped / 10} toko x Rp 8.000 ): ${formatRupiah(storeFee.toString())}</p>
+            <p>Gaji Packing ( ${itemsShipped} pcs x Rp 850 ): ${formatRupiah(packingFee.toString())}</p>
+            <p>Biaya Username ( ${itemsShipped / 2} x Rp 1.000 ): ${formatRupiah(usernameFee.toString())}</p>
+            <p>Biaya Ongkir ( ${formatRupiah(initialShipping.toString())} - ${shippingDiscount}% ): ${formatRupiah(netShippingCost.toString())}</p>
+            <p><strong>Total Biaya Operasional:</strong> ${formatRupiah(totalOperationalCost.toString())}</p>
+            <hr>
+            <p class="final-profit">Profit Bersih: ${formatRupiah(netProfit.toString())}</p>
+        `;
+        
+        calcResultSection.style.display = 'block';
+        addProfitToAppBtn.style.display = 'inline-flex';
+        addProfitToAppBtn.dataset.profit = netProfit; // Store profit for later use
     }
 
     addDataForm.addEventListener('submit', async(e) => {
@@ -515,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
             renderCards(data, false);
-            updateSummary(data);
+            // DO NOT update summary here, it should be independent of filters.
         } catch (error) {
             console.error("Error filtering transactions:", error);
             showToast("Error during filter.", "error");
@@ -530,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { error } = await supabase.from('Manager').delete().eq('id', id);
                 if (error) throw error;
                 showToast('Transaksi berhasil dihapus', 'success');
-                fetchInitialData();
+                fetchInitialData(); // This will re-fetch transactions and totals correctly
             } catch (error) {
                 console.error('Error deleting transaction:', error);
                 showToast(`Error: ${error.message}`, 'error');
@@ -539,60 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAndSetTotals() {
-        try {
-            const user = await supabase.auth.getUser();
-            if (!user.data.user) return;
-            const userId = user.data.user.id;
-
-            // Fetch total income
-            const { data: incomeData, error: incomeError } = await supabase
-                .from('Manager')
-                .select('jumlah')
-                .eq('user_id', userId)
-                .eq('type', 'income');
-            if (incomeError) throw incomeError;
-            const income = incomeData.reduce((sum, t) => sum + t.jumlah, 0);
-
-            // Fetch total expense
-            const { data: expenseData, error: expenseError } = await supabase
-                .from('Manager')
-                .select('jumlah')
-                .eq('user_id', userId)
-                .eq('type', 'expense');
-            if (expenseError) throw expenseError;
-            const expense = expenseData.reduce((sum, t) => sum + t.jumlah, 0);
-            
-            const balance = income - expense;
-
-            const pemasukanEl = document.getElementById('pemasukan');
-            const pengeluaranEl = document.getElementById('pengeluaran');
-            const penghasilanEl = document.getElementById('penghasilan');
-
-            pemasukanEl.innerHTML = `+ ${formatRupiah(income.toString())}`;
-            pemasukanEl.classList.remove('expense');
-            pemasukanEl.classList.add('income');
-
-            pengeluaranEl.innerHTML = `- ${formatRupiah(expense.toString())}`;
-            pengeluaranEl.classList.remove('income');
-            pengeluaranEl.classList.add('expense');
-
-            if (balance >= 0) {
-                penghasilanEl.innerHTML = `+ ${formatRupiah(balance.toString())}`;
-                penghasilanEl.classList.remove('expense');
-                penghasilanEl.classList.add('income');
-            } else {
-                penghasilanEl.innerHTML = `- ${formatRupiah(Math.abs(balance).toString())}`;
-                penghasilanEl.classList.remove('income');
-                penghasilanEl.classList.add('expense');
-            }
-
-        } catch (error) {
-            console.error("Error fetching totals:", error);
-            showToast("Could not calculate totals.", "error");
-            document.getElementById('pemasukan').innerHTML = 'Error';
-            document.getElementById('pengeluaran').innerHTML = 'Error';
-            document.getElementById('penghasilan').innerHTML = 'Error';
-        }
+        // This function is now replaced by updateTotalSummary to avoid confusion.
+        // Calling the new function for compatibility in case other parts still use it.
+        await updateTotalSummary();
     }
 
 
@@ -713,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
             renderCards(data, false);
-            updateSummary(data);
+            // DO NOT update summary here, it should be based on all data, not search results.
 
         } catch (error) {
             console.error("Error searching transactions:", error);
@@ -759,8 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
             labelFilterInput.value = '';
             labelFilterSuggestions.style.display = 'none';
             isFiltering = false;
-            fetchInitialData(); // This will fetch page 1
-            fetchAndSetTotals();  // This will show grand totals
+            fetchInitialData(); // Re-fetches page 1 and keeps the correct grand total.
         });
         labelFilterSuggestions.appendChild(allItem);
 
@@ -804,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Fetch totals and first page of transactions
-        fetchAndSetTotals();
+        await updateTotalSummary();
         isSearching = false; // Ensure we are not in search mode
         isFiltering = false;
         transactions = [];
@@ -874,6 +898,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Calculator Event Listeners
+    openCalculatorBtn.addEventListener('click', () => calculatorModal.classList.add('active'));
+    closeCalculatorBtn.addEventListener('click', () => calculatorModal.classList.remove('active'));
+    calculateBtn.addEventListener('click', handleCalculator);
+
+    addProfitToAppBtn.addEventListener('click', () => {
+        const profit = addProfitToAppBtn.dataset.profit;
+        if (profit) {
+            // Close calculator and open the 'add data' modal
+            calculatorModal.classList.remove('active');
+            toggleModal();
+
+            // Reset the form first
+            resetModal();
+
+            // Pre-fill the form
+            modalTitle.textContent = 'Tambah Profit dari Kalkulator';
+            typeInput.value = 'Pemasukan';
+            typeInput.dataset.value = 'income';
+            jumlahInput.value = formatRupiah(profit);
+            labelInput.value = 'Profit Bisnis';
+            document.getElementById('catatan').value = `Profit bersih dihitung dari kalkulator.
+Total Pemasukan: ${document.getElementById('calcTotalPayment').value}
+Total Pengiriman: ${document.getElementById('calcItemsShipped').value} pcs`;
+        }
+    });
+
+    // Add formatting to calculator currency inputs
+    ['calcTotalPayment', 'calcItemCost', 'calcInitialShipping'].forEach(id => {
+        document.getElementById(id).addEventListener('keyup', (e) => {
+            e.target.value = formatRupiah(e.target.value);
+        });
+    });
+    
     labelFilterInput.addEventListener('input', renderLabelFilterSuggestions);
     labelFilterInput.addEventListener('click', renderLabelFilterSuggestions);
 
