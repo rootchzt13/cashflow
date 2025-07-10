@@ -1,12 +1,26 @@
 :root {
-    --primary-color: #bb86fc;
-    --primary-variant-color: #3700b3;
-    --secondary-color: #03dac6;
+    --primary-color: rgba(128, 103, 240, 0.8);
+    --primary-color-hover: rgba(140, 115, 255, 0.9);
+    --secondary-color: rgba(255, 255, 255, 0.1);
+    --secondary-color-hover: rgba(255, 255, 255, 0.2);
+    --cancel-color: rgba(255, 255, 255, 0.05);
+    --cancel-color-hover: rgba(255, 255, 255, 0.15);
+    --surface-color: rgba(30, 30, 30, 0.6);
+    --on-surface-color: #E6E1E5;
+    --on-surface-variant-color: #8c8c8e;
     --background-color: #121212;
-    --surface-color: rgba(255, 255, 255, 0.05);
-    --on-primary-color: #000;
-    --on-surface-color: #fff;
     --error-color: #cf6679;
+    --income-color: #03dac6;
+    --expense-color: #ff5f6d;
+
+    /* New, more subtle button palette */
+    --btn-primary-bg: rgba(128, 103, 240, 0.75);
+    --btn-primary-hover: rgba(140, 115, 255, 0.9);
+    --btn-secondary-bg: rgba(255, 255, 255, 0.1);
+    --btn-secondary-hover: rgba(255, 255, 255, 0.2);
+    --btn-text-hover: rgba(255, 255, 255, 0.08);
+    --btn-border: 1px solid rgba(255, 255, 255, 0.2);
+    --btn-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -64,20 +78,32 @@ header h1 {
     height: 18px;
 }
 
-.add-data-btn {
-    background-color: var(--primary-color);
-    color: var(--on-primary-color);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    display: flex;
+.add-data-btn,
+.form-actions button,
+.sign-out-btn {
+    background-color: var(--secondary-color);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.add-data-btn:hover,
+.form-actions button:hover,
+.sign-out-btn:hover {
+    background-color: var(--secondary-color-hover);
+    transform: translateY(-2px);
+}
+
+.add-data-btn, .sign-out-btn {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: background-color 0.3s ease;
-    margin-right: 0; /* Remove old margin if it exists */
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--on-surface-color);
+    margin-right: 0;
 }
 
 .add-data-btn:last-child {
@@ -267,17 +293,26 @@ header h1 {
 }
 
 .action-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    padding: 0.25rem;
     display: flex;
     align-items: center;
-    transition: color 0.3s ease;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: var(--on-surface-variant-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.action-btn svg {
+.action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--on-surface-color);
+    transform: scale(1.1);
+}
+
+.action-btn i {
     width: 18px;
     height: 18px;
 }
@@ -476,15 +511,21 @@ header h1 {
     cursor: pointer;
 }
 
-.cancel-btn {
-    background-color: transparent;
-    border: 1px solid var(--error-color);
-    color: var(--error-color);
+.submit-btn {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
 }
 
-.submit-btn {
-    background-color: var(--primary-color);
-    color: var(--on-primary-color);
+.submit-btn:hover {
+    background-color: var(--primary-color-hover) !important;
+}
+
+.cancel-btn {
+    background-color: var(--cancel-color) !important;
+}
+
+.cancel-btn:hover {
+    background-color: var(--cancel-color-hover) !important;
 }
 
 .modal h2.modal-title-confirm {
@@ -746,6 +787,62 @@ header h1 {
     color: var(--income-color);
     background-color: rgba(3, 218, 198, 0.1);
     margin-top: 1rem;
+}
+
+
+/* --- Consolidated Button Styles --- */
+/* Base for all buttons */
+.add-data-btn, .sign-out-btn, .form-actions button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--on-surface-color);
+}
+
+/* Adding a subtle border and shadow on hover */
+.add-data-btn:hover, .sign-out-btn:hover, .form-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--btn-shadow);
+}
+
+/* --- Primary Buttons (Purple, stands out) --- */
+.add-data-btn, .submit-btn {
+    background-color: var(--btn-primary-bg);
+    border: var(--btn-border);
+}
+
+.add-data-btn:hover, .submit-btn:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+/* --- Secondary Buttons (Glassy Grey) --- */
+.secondary-btn, .sign-out-btn {
+    background-color: var(--btn-secondary-bg);
+    border: var(--btn-border);
+}
+
+.secondary-btn:hover, .sign-out-btn:hover {
+    background-color: var(--btn-secondary-hover);
+}
+
+/* --- Cancel Button (Minimalist) --- */
+.cancel-btn {
+    background-color: transparent;
+    color: var(--on-surface-variant-color);
+}
+
+.cancel-btn:hover {
+    background-color: var(--btn-text-hover);
+    color: var(--on-surface-color);
 }
 
 

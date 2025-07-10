@@ -90,52 +90,53 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmCallback = null;
     }
 
-    async function updateTotalSummary() {
-        try {
-            const { data: userData, error: userError } = await supabase.auth.getUser();
-            if (userError || !userData.user) throw userError || new Error("User not found.");
+    function updateSummary(dataToSummarize) {
+        const income = dataToSummarize.filter(t => t.type === 'income').reduce((sum, t) => sum + t.jumlah, 0);
+        const expense = dataToSummarize.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.jumlah, 0);
+        const balance = income - expense;
 
-            const { data, error } = await supabase
-                .from('Manager')
-                .select('jumlah, type')
-                .eq('user_id', userData.user.id);
+        const pemasukanEl = document.getElementById('pemasukan');
+        const pengeluaranEl = document.getElementById('pengeluaran');
+        const penghasilanEl = document.getElementById('penghasilan');
 
-            if (error) throw error;
+        pemasukanEl.innerHTML = `+ ${formatRupiah(income.toString())}`;
+        pemasukanEl.classList.remove('expense');
+        pemasukanEl.classList.add('income');
 
-            const income = data.filter(t => t.type === 'income').reduce((sum, t) => sum + t.jumlah, 0);
-            const expense = data.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.jumlah, 0);
-            const balance = income - expense;
+        pengeluaranEl.innerHTML = `- ${formatRupiah(expense.toString())}`;
+        pengeluaranEl.classList.remove('income');
+        pengeluaranEl.classList.add('expense');
 
-            const pemasukanEl = document.getElementById('pemasukan');
-            const pengeluaranEl = document.getElementById('pengeluaran');
-            const penghasilanEl = document.getElementById('penghasilan');
-
-            pemasukanEl.innerHTML = `+ ${formatRupiah(income.toString())}`;
-            pemasukanEl.classList.remove('expense');
-            pemasukanEl.classList.add('income');
-
-            pengeluaranEl.innerHTML = `- ${formatRupiah(expense.toString())}`;
-            pengeluaranEl.classList.remove('income');
-            pengeluaranEl.classList.add('expense');
-
-            if (balance >= 0) {
-                penghasilanEl.innerHTML = `+ ${formatRupiah(balance.toString())}`;
-                penghasilanEl.classList.remove('expense');
-                penghasilanEl.classList.add('income');
-            } else {
-                penghasilanEl.innerHTML = `- ${formatRupiah(Math.abs(balance).toString())}`;
-                penghasilanEl.classList.remove('income');
-                penghasilanEl.classList.add('expense');
-            }
-        } catch (error) {
-            console.error("Error updating summary:", error);
-            showToast("Could not update summary totals.", "error");
+        if (balance >= 0) {
+            penghasilanEl.innerHTML = `+ ${formatRupiah(balance.toString())}`;
+            penghasilanEl.classList.remove('expense');
+            penghasilanEl.classList.add('income');
+        } else {
+            penghasilanEl.innerHTML = `- ${formatRupiah(Math.abs(balance).toString())}`;
+            penghasilanEl.classList.remove('income');
+            penghasilanEl.classList.add('expense');
         }
     }
 
-    function updateSummary(data) {
-        // This function is now deprecated and will not be used to prevent calculation errors.
-        // The new `updateTotalSummary` function should be used instead.
+    async function fetchAndDisplayGrandTotal() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+    
+            const { data, error } = await supabase
+                .from('Manager')
+                .select('jumlah, type')
+                .eq('user_id', user.id);
+    
+            if (error) throw error;
+    
+            // On initial load, update summary with ALL transactions
+            updateSummary(data);
+    
+        } catch (error) {
+            console.error("Error fetching grand totals:", error);
+            showToast("Could not calculate grand totals.", "error");
+        }
     }
 
     async function fetchData() {
@@ -603,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
             renderCards(data, false);
-            // DO NOT update summary here, it should be independent of filters.
+            updateSummary(data); // Update summary with filtered data
         } catch (error) {
             console.error("Error filtering transactions:", error);
             showToast("Error during filter.", "error");
@@ -626,11 +627,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function fetchAndSetTotals() {
-        // This function is now replaced by updateTotalSummary to avoid confusion.
-        // Calling the new function for compatibility in case other parts still use it.
-        await updateTotalSummary();
-    }
+    // This function is deprecated. Use fetchAndDisplayGrandTotal instead.
+    // async function fetchAndSetTotals() {
+    //     await updateTotalSummary();
+    // }
 
 
     function renderCards(data, append = false) {
@@ -717,14 +717,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (data.length > 0) {
-                if (pageNum === 0) {
-                    transactions = data;
-                    renderCards(transactions, false);
-                } else {
-                    transactions = [...transactions, ...data];
-                    renderCards(data, true); // Only render the new cards
-                }
+            if (pageNum === 0) {
+                transactions = data;
+                renderCards(transactions, false); // Always render, even if data is empty, to show empty state
+            } else if (data.length > 0) {
+                transactions = [...transactions, ...data];
+                renderCards(data, true); // Only render the new cards for subsequent pages
             }
 
             if (data.length < itemsPerPage) {
@@ -758,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
             renderCards(data, false);
-            // DO NOT update summary here, it should be based on all data, not search results.
+            updateSummary(data); // Update summary with search results
 
         } catch (error) {
             console.error("Error searching transactions:", error);
@@ -789,7 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // If search is cleared, reset to initial paginated view
             isSearching = false;
             fetchInitialData();
-            fetchAndSetTotals(); // This will show grand totals
         }
     });
 
@@ -804,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             labelFilterInput.value = '';
             labelFilterSuggestions.style.display = 'none';
             isFiltering = false;
-            fetchInitialData(); // Re-fetches page 1 and keeps the correct grand total.
+            fetchInitialData(); // Re-fetches page 1 and grand total
         });
         labelFilterSuggestions.appendChild(allItem);
 
@@ -854,8 +851,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Could not load initial data.', 'error');
         }
 
-        // Fetch totals and first page of transactions
-        await updateTotalSummary();
+        // Fetch grand totals and first page of transactions
+        await fetchAndDisplayGrandTotal();
         isSearching = false; // Ensure we are not in search mode
         isFiltering = false;
         transactions = [];
